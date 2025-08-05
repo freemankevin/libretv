@@ -65,32 +65,27 @@ jobs:
           git pull origin main --rebase || git pull origin main
           echo "✅ Remote changes pulled"
 
-      - name: Reset to Upstream
+      - name: Set Sparse Checkout to Exclude Workflows
         if: steps.check_updates.outputs.has_updates == 'true' || github.event.inputs.force_sync == 'true'
         run: |
-          echo "🔄 Syncing changes from upstream..."
+          echo "🔧 Configuring sparse-checkout to exclude .github/workflows/..."
+          git sparse-checkout init --cone
+          git sparse-checkout set --no-cone '/*' '!.github/workflows/'
           git reset --hard upstream/main
-          echo "✅ Repository reset to upstream/main"
-
-      - name: Remove Unnecessary Workflow Files (Exclude sync.yml)
-        if: steps.check_updates.outputs.has_updates == 'true' || github.event.inputs.force_sync == 'true'
-        run: |
-          echo "🗑️ Removing unnecessary workflow files (excluding sync.yml)..."
-          git rm -r .github/workflows/* --exclude=.github/workflows/sync.yml || true
-          echo "✅ Unnecessary files removed"
+          echo "✅ Sparse checkout configured and reset to upstream/main"
 
       - name: Commit Changes
         if: steps.check_updates.outputs.has_updates == 'true' || github.event.inputs.force_sync == 'true'
         run: |
           git add .
-          git commit -m "Remove unnecessary workflow files (excluding sync.yml) and sync with upstream" || echo "No changes to commit"
+          git commit -m "Sync with upstream and exclude .github/workflows/" || echo "No changes to commit"
           echo "✅ Changes committed"
 
       - name: Push Changes
         if: steps.check_updates.outputs.has_updates == 'true' || github.event.inputs.force_sync == 'true'
         run: |
           echo "📤 Pushing synced changes..."
-          git push origin main --force-with-lease
+          git push origin main
           echo "✅ Successfully synced with upstream repository"
 
       - name: Create Summary
