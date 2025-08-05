@@ -35,9 +35,9 @@ jobs:
           git remote add upstream https://github.com/LibreSpark/LibreTV || true
           git remote set-url upstream https://github.com/LibreSpark/LibreTV
 
-      - name: Fetch Upstream Changes
+      - name: Fetch Upstream and Origin Changes
         run: |
-          echo "📡 Fetching changes from upstream repository..."
+          echo "📡 Fetching changes from upstream and origin repository..."
           git fetch upstream
           git fetch origin
 
@@ -58,11 +58,17 @@ jobs:
             echo "has_updates=false" >> $GITHUB_OUTPUT
           fi
 
+      - name: Pull Remote Changes
+        if: steps.check_updates.outputs.has_updates == 'true' || github.event.inputs.force_sync == 'true'
+        run: |
+          echo "🔄 Pulling changes from remote repository..."
+          git pull origin main --rebase
+          echo "✅ Remote changes pulled"
+
       - name: Reset to Upstream
         if: steps.check_updates.outputs.has_updates == 'true' || github.event.inputs.force_sync == 'true'
         run: |
           echo "🔄 Syncing changes from upstream..."
-          # 重置到上游 main 分支，覆盖本地历史
           git reset --hard upstream/main
           echo "✅ Repository reset to upstream/main"
 
@@ -84,7 +90,7 @@ jobs:
         if: steps.check_updates.outputs.has_updates == 'true' || github.event.inputs.force_sync == 'true'
         run: |
           echo "📤 Pushing synced changes..."
-          git push origin main --force
+          git push origin main
           echo "✅ Successfully synced with upstream repository"
 
       - name: Create Summary
